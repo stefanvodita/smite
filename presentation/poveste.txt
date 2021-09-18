@@ -1,0 +1,94 @@
+-- intro --
+
+Buna ziua, ma numesc Stefan Vodita, si prezentarea mea o sa va arate cum va puteti face calculatorul sa citeasca o partitura.
+
+
+-- motivatie --
+
+De ce am vrea asta? Sa zicem ca avem o *aplicatie* care poate interpreta partituri fotografiate. Aplicatia asta ar putea tine locul unui acompaniament care lipseste, ar putea usura munca unui compozitor, sau ar putea fi un mijloc de invatare pentru cei care nu stiu sa citeasca partituri.
+
+*Al doliea motiv* e si mai pragmatic. Avem biblioteci de manuscrise muzicale care nu au fost inregistrate niciodata. Deocamdata putem sa le scanam ca sa fie conservate, dar nu avem acces la informatia muzicala pana cand nu sunt interpretate. Un proces manual ar fi extrem de inficient, deci se doreste o solutie computationala.
+
+*Ultimul motiv* are in vedere munca de cercetare. Problema pe care am descris-o pana acum tine de fapt de un domeniu de cercetare numit recunoasterea optica a muzicii, o sa ii zic OMR pe scurt, din engleza. OMR se afla la intersectia *mai multor domenii*, deci cand rezolvam o problema de recunoasterea muzicii, adesea rezolvam si o problema in muzicologie, in computer vision sau, mai nou, in deep learning.
+
+
+-- abordari --
+
+Bun, stim acum ce presupune OMR, si ne intereseaza cum lucreaza o solutie OMR. Modelul clasic presupunea mai multi *pasi* cu rezolvari algoritmice, ca in exemplu. Pentru o solutie completa era nevoie ca toti acesti pasi sa fie *inseriati*, ceea ce se intampla rar, pentru ca pasii in sine prezentau dificultati. 
+
+O alternativa a aparut insa in 2018, cand o retea neurala a dovedit ca o partitura poate fi interpretata *complet*, si toti pasii intermediari sunt incapsulati sau inlocuiti de catre *model*. Tineti minte acesta retea, o sa o tot mentionez. Rezultatul este foarte important si schimba complet paradigma in OMR.
+
+
+-- transformator --
+
+In acelasi timp, un alt domeniu de cercetare suferea schimbari mari, si anume prelucrarea limbajului natural. Pana in 2017, retele recurente dominau, dar in 2017 apare transformatorul si le depaseste. Avantajele transformatorului sunt:
+1. Metoda de procesare permite paralelizare, deci antrenarea si inferenta sunt mai eficiente.
+2. Mecanismul de atentie elimina situatii in care modelul uita contextul in care lucreaza.
+
+
+-- propunere --
+
+*Scopul* proiectului meu de licenta este sa profite de aceste avantaje ale transformatorului pentru a rezolva o problema de OMR.
+*Obiectivul* este sa aflam daca transformatorul este o arhitectura avantajoasa pentru OMR, iar *conditiile* pe care trebuie sa le respecte solutia sunt ca:
+
+*1.* Modelul sa lucreze cu partituri intregi - deci sa nu faca clasificare pe simboluri deja extrase din partituri, sau sa interpreteze numai anumite simboluri, si sa le ignore pe altele. Trebuie sa ia o partitura si sa o traduca complet.
+
+*2.* Modelul trebuie sa incapsuleze tot procesul, adica intrarea sa fie imaginea, iar iesirea sa fie informatia muzicala, o traducere end-to-end.
+
+*3.* Simbolurile trebuie interpretate in context. Cel mai bun exemplu este cheia. Cheia in care este scrisa partitura afecteaza semnificatia tuturor notelor din piesa. Vrem ca modelul sa aiba acest nivel de intelegere semantica.
+
+
+-- flux --
+
+Modul de lucru al implementarii e urmatorul:
+Avem o imagine alb-negru, reprezentand un portativ in caractere de tipar.
+*Imaginea* e redimensionata si serializata.
+*Transformatorul* proceseaza imaginea sub forma asta, si rezultatul e o *matrice de probailitati*, din care, alegand probabilitatile maxime, *deducem* interpretarea finala.
+
+
+-- implementare --
+
+Modelul porneste de la aceste *3 straturi* de baza: atentia, care e mecanismul ce ofera context, urmata de operatii liniare si normalizare. Cele 3 formeaza o *celula* a transformatorului vizual.
+Putem sa *inlanutim* mai multe astfel de celule si sa *adaugam* un pas de procesare a intrarilor si am obtinut transformatorul vizual complet.
+In forma lui initiala e constituit pentru probleme de clasificare, dar putem *altera* iesirile incat sa fie *potrivite* problemei noastre, si asta e *modelul* intreg.
+Transformatorul vizual e pus la *dispozitie* de biblioteca Transformers. Nota aici: Nu incerc sa fac o gluma. Compania care dezvolta biblioteca se numeste Hugging Face, de aceea au logo cu acest emoji.
+*Operatiile* adaugate la final sunt scrise in PyTorch, ceea ce functioneaza perfect pentru ca si transformatorul vizual e *oferit* tot in format torch.
+
+
+-- exemple (1) --
+
+Prima partitura pe care v-o arat este interesanta din cauza ca apar multe note cu durata scurta legate. Din fericire, *modelul* nu are nicio problema cu acest lucru, si interpreteaza corect toata partitura.
+
+
+-- exemple (2) --
+
+Un caz mai putin satisfacator este acesta. Greseala se produce la aceste *3 note* de la final, marcate cu albastru. *Dedesubt* vedeti si predictia modelului, cu zona problematica evidentiata. Daca observati, toate cele 3 note au fost mutate cu o linie de portativ mai sus, deci probabil undeva in procesarea imaginii s-a pierdut o linie de portativ acolo.
+
+
+-- rezultate --
+
+Sa ne uitam acum la rezultate dintr-o perspectiva cantitativa. Am pus pentru comparatie in prima coloana modelul meu si in a doua coloana reteaua recurenta pe care am mentionat-o mai devreme.
+Vreau sa va atrag atentia la aceasta distanta Levenshtein. Distanta Levenshtein masoara numarul minim de schimbari necesare pentru a transforma o secventa in secventa dorita, unde o schimbare e inserarea, stergerea sau inlocuirea unui element.
+Un motiv pentru care transformatorulul se descurca mai slab aici ar putea fi setul de date. In general, transformatoarele au nevoie de seturi de date mai mari decat retelele recurente ca sa invete.
+In schimb vedeti la timpul de inferenta, mai jos, ca a fost redus de peste 3 ori fata de reteaua recurenta. Celelalte metrici sunt si ele bune.
+
+
+-- concluzii --
+
+Ne intoarcem la slide-ul cu obiectivele proiectului. Ca si rezumat, am considerat o abordare noua pentru OMR, bazata pe transformatoare, si am *dovedit* ca este o solutie potrivita. Am respectat toate conditiile impuse: *Modelul* proceseaza partituri intregi, *o face* intr-o maniera end-to-end, si *interpretarea* tine cont de context. *In plus*, am obtinut un timp de inferenta de 3 ori mai mic decat solutiile precedente.
+Avand in vedere rezultate, nu m-ar surprinde ca in viitor sa vedem transformatorul ca o abordare uzuala in OMR.
+
+
+-- dezvoltari ulterioare --
+
+*Lipsa* mare a proiectului este validarea. Din testele mele, pare ca rezultatele sunt robuste, dar e nevoie de mai mult timp si mai multe antrenari si evaluari ca rezultatele sa fie
+confirmate.
+
+*Modelul* ar putea fi imbunatatit cu siguranta. Deocamdata am folosit un transformator destul de generic, modificat incat sa se potriveasca pe problema, dar s-ar putea construi un model mai particular, special pentru OMR.
+
+*Pasul* urmator este ca modelul sa fie antrenat si pe imagini realistice, de exemplu imagini care prezinta artefacte de la fotografiere. Urmarind cercetarile din domeniu, ma astept ca modelul sa se descurce si in aceasta situatie.
+
+*Mai departe* ar trebui incercate partiturile scrise de mana. In privina asta nu pot sa fac o predictie, dar problema e abordabila.
+
+*O problema* si mai grea insa, vor fi partiturile cu note cantate simultan. In configuratia de acum, introducerea de partituri polifonice ar presupune o crestere exponentiala a voabularului muzical folosit, pentru ca ar fi nevoie de un simbol nou pentru fiecare combinatie posibila de note simultane. Daca aceasta solutie e viabila, va fi nevoie oricum de un set de date mult mai mare. Altfel, schema de codificare trebuie schimbata fundamental.
+
