@@ -8,8 +8,8 @@
 * A tad unpolished
 
 # Demo
-Demos can be found [here](https://drive.google.com/drive/folders/1yH70aoBvWO5xaO-i9Vr-hyl450Ci_3tW?usp=sharing).
-The voiceover is in Romanian, but just the video should still be useful.
+There is a [demo on YouTube](https://youtu.be/VDbCB1P4h18?si=gH963CnpEqOAvpOi).
+The voiceover is in Romanian, but the video alone should still be useful.
 
 # Corpus & Conversor
 At the foundation of this project is the work of Jorge Calvo-Zaragoza and David Rizo,
@@ -40,7 +40,7 @@ I mostly used a Standard NC6_Promo virtual machine, which Azure is deprecating. 
 and take about 24h to reach 92% accuracy. I never kept it going much longer due to budget constraints.
 
 If you only want to run the pretrained model, you don't need a GPU. Inference is very fast even on CPU.
-You can download the pretrained model [here](https://drive.google.com/drive/folders/1yH70aoBvWO5xaO-i9Vr-hyl450Ci_3tW?usp=sharing).
+You can download the pretrained model [here](https://drive.google.com/file/d/1yWt-O4HVtgJ3BYbWb5EUYb0UrhvFis2A/view?usp=sharing).
 
 # Run it
 The run command is a legacy from [End-to-End Neural Optical Music Recognition of Monophonic Scores](https://www.mdpi.com/2076-3417/8/4/606/htm),
